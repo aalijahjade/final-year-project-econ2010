@@ -1,5 +1,5 @@
 ---
-title: "Assignment 2_1 Whitely 620148625"
+title: "Assignment 2.1"
 output:
   pdf_document: default
   html_document:
@@ -9,7 +9,7 @@ output:
 
 
 ```{r}
-#load libraries
+# load libraries
 
   library(foreign)
   library(haven)
@@ -323,6 +323,96 @@ Description of Key Variables
 
 #Re-code the cov_f2b into rename the levels 
 
+     firms1a$financing <- factor(firms1a$COV_F2B, levels = c(1, 2), labels = c("Yes", "No"))
+     
+  
+#Create a graph representing monetary government
+     
+     ggplot(firms1a, aes(x = log(COV_G1D1))) +
+       geom_dotplot() +
+         labs(
+            title = "Government Support Based On The Gender of The Owner of The Firm", 
+            x = "Financial Government Support"
+             ) +
+              facet_wrap(~gender) #to create subplots based on gender
+     
+     
+#Create a graph representing the variable, access to finance 
+     
+ggplot(firms1a, aes(x = financing)) +
+geom_bar() +
+labs(title = "Implementation Measures to Safeguard The Sources of Finance",
+      x = "Access to Finance") +
+             coord_flip() +
+               facet_wrap(~gender) 
+```
+
+
+```{r}
+#(d) Goal 4    
+       
+      firms3a <- firms3
+
+
+#Factor the COV_B1A_X column into 3 levels
+      
+      firms3a$covid_employment <- factor(firms3a$COV_D1A1A_X, levels = c(1, 2, 3), labels = c("Increase", "Decrease", "No Change"))
+
+      
+#Filter out the NAs from the covid_employment column
+     
+      firms3a <- firms3a %>%
+        filter(covid_employment == covid_employment, na.rm = TRUE) 
+  
+      
+#Create a graph to show the relationship between the change and the type of firm
+       
+      ggplot(firms3a, aes(x = type_of_firm, y = covid_employment)) +
+        geom_jitter(shape = 8) +
+          labs(
+            title = "The Impact of the COVID-19 Crisis on The Full-Time Employment of Firms", 
+              x = "Type of Firm", 
+               y = "Impact of COVID-19 on Full-time Employment Levels"
+                ) +
+                guides(x = guide_axis(n.dodge = 2)) #avoids overlapping labels on the x-axis
+```
+
+
+```{r}
+#(e)Goal 5:    
+
+    firms6b <- firms6 %>%
+  
+  
+#Filter out all the special interviwer codes (i.e. -77. -88. etc) and select the columns to be worked with
+    filter(C15A > 0, COV_A7A > 0) %>%
+         select(sector, C15A, COV_A7A)
+
+
+#create graph to show the main challenges firms face before and during the pandemic
+    ggplot(firms6a, aes(x = sector, y = factor(COV_A7A))) +
+      geom_jitter() + 
+         geom_jitter(aes(y = C15A), color = "lightblue") +
+            labs(
+              title = "Main Challenges Faced By Firms Before and Since the Advent of COVID-19"
+                )
+      
+      
+
+```
+
+
+
+References
+```{r}
+
+#Deepanshu , Bhalla. "IF ELSE CONDITIONS IN R (WITH EXAMPLES)", 2018. https://www.listendata.com/2017/03/if-else-in-r.html.
+
+#"Recoding multiple values in a column using an "ifelse" statement" Stack Overflow, Feburary 14, 2019. https://stackoverflow.com/questions/54700667/recoding-multiple-values-in-a-column-using-an-ifelse-statement
+
+#Thomas , Neitmann. “Center Plot Title in GGPLOT2.” Stack Overflow, April 12, 2020. https://stackoverflow.com/questions/40675778/center-plot-title-in-ggplot2. 
+
+```
      firms1a$financing <- factor(firms1a$COV_F2B, levels = c(1, 2), labels = c("Yes", "No"))
      
   
