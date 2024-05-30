@@ -1,0 +1,597 @@
+---
+title: "620148625 Whitely Final Assignment"
+author: "Aalijah Whitely"
+date: "`r Sys.Date()`"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+**PART ONE**
+
+**The Impact of Hurricanes on the Economic Welfare of Jamaicans**
+
+
+**Introduction**
+
+The Caribbean is known for its susceptibility to destructive hurricanes, which have significant implications for the economic welfare of the countries in this area. Over the previous 30 years, the region has experienced an average of 32.4 disasters each year, resulting in annual expenditure of $700 million to 3.3 billion between 1970 and 1999 (Charvériat, 2000). These natural catastrophes impede economic activity and cause capital asset losses, resulting in both negative short-term and long-term consequences on GDP growth (Strobl, 2012). As a junior economist at a local development institute, the task of quantifying the impact of hurricanes on economic welfare for policy development is crucial and challenging. Focusing on Jamaica as a case study provides a valuable opportunity to delve into the intricate dynamics of how hurricanes affect the economic welfare of the local population and to draw insights that can inform policy decisions not only for Jamaica but also for the broader Caribbean region. Highlighting the implications of this study for policy development across the Caribbean underscores the need for proactive and comprehensive strategies to mitigate the impact of hurricanes on economic welfare. As a junior economist, the responsibility lies in translating these findings into actionable policies that safeguard the well-being and livelihoods of the people in Jamaica, the entire Caribbean region and beyond.
+
+
+**Findings**
+
+To initiate an analysis, the data was converted to panel data. Following th confirmation of the conversion, the analysis was carried out. The data included 16,704 observations and 11 variables. A summary of three key variables (Table 1 ) - average temperature (heatavg1), data year (year) and measure of economic welfare - indicated that the earliest year recorded was 1990, while the latest was 2005 and the median year recorded is  1997. Average temperatures ranged from a minimum of 22.82 and a maximum of 26.98. Notably, the minimum recorded under study for economic welfare was 5.447 and a maximum of 14.182. These findings point to significant differences between the years 1990 and 2005 in terms of average temperatures and economic welfare.Consequently, further investigation is essential to understand the true implications of these disparities.
+
+```{r, echo=FALSE, warning=FALSE}
+
+setwd("C:/Users/white/OneDrive/ECON3050 Final Assignment")
+
+# Load libraries 
+
+  library(AER)
+  library(plm)
+  library(stargazer)
+  library(extRemes)
+  library(ggplot2)
+  library(readxl)
+  library(dplyr)
+  library(grid)
+
+# Load data frame
+
+  IndividualFinalAssignment <- read_excel("C:/Users/white/OneDrive/ECON3050 Final Assignment/IndividualFinalAssignment.xls")
+  jamdata <- pdata.frame(IndividualFinalAssignment, index = c("cluster"))
+  data(jamdata)
+  is.data.frame(jamdata)
+  
+# Inspect the data frame 
+   dim(jamdata)
+   panelsum <- summary(jamdata[, c(1, 8, 9)] )
+    stargazer(panelsum, title = "Tabe 1: Summary of the Variables ( Year, Average Temperature, and Measure of Economic Welfare )", no.space = TRUE, dep.var.caption = "OLS", header = FALSE, digits = 3, df = FALSE, report = "vc*s", star.cutoffs = c(0.10, 0.05, 0.01), model.names = FALSE, object.names = FALSE,  model.numbers =  FALSE, keep.stat = c("rsq", "f"), type = "text")
+    
+```
+
+*Panel Data Analysis* 
+
+A series of linear regression analyses was conducted to visualize the relationships between the various variables over the years. In this analysis, the measure of economic welfare was considered the dependent variable while average rainfall and average temperature were treated as independent variables. The results were organized in a table with the first column representing the year 1990, the second column representing the year 1997 and the last column representing the year 2005 (refer to Table 2). Here is a summary of the findings:
+In 1990, average rainfall (rain1) and average temperature showed a negative relationship with economic welfare. This implies that as average rainfall and/or average temperature increases, Jamaica's economic welfare decreases. In the model, only average rainfall was statistically significant i.e. a 1-unit increase in average rainfall will be associated with a reduction in Jamaica's economic welfare by 0.002 units. In 1997, both average rainfall and average temperature had a positive relationship with economic welfare. Therefore, an increase in either average rainfall or average temperature will lead to an increase in economic welfare. In the model, only average temperature was statistically significant. A 1-unit increase in average temperature will lead to an improvement in Jamaica's economic activity by 0.123 units. In 2005, average rainfall had a negative relationship with economic welfare while average temperature have a positive relationship and was statistically significant. This simply means that an increase in average rainfall will lead to a decrease in Jamaica's economic welfare, whereas a 1-unit increase in average temperature will lead to a 0.064 unit increase in Jamaica's economic welfare.
+
+Comparing the three models, it is evident that average temperature showed a steady increase over the years and remained statistically significant in the later years. This can be confirmed by the values in Table 3. Average temperature is the only significant variable at the 1% significance level where a a 1-unit increase in average temperature could lead to a 0.085 increase in the economic welfare of Jamaicans. On the other hand, average rainfall exhibited fluctuations across the years. In table 3, average rainfall had an overall negative relationship with economic welfare and was not statistically significant to the model.
+ 
+```{r, echo=FALSE, warning=FALSE}
+
+data("jamdata", package = "AER")
+  fm <- log_newtotalpercapitacons ~ rain1 + heatavg1
+
+# Basic Model
+  basicpanelmodel1 <- lm(fm, jamdata, subset = year == 1990) #the minimum year
+  basicpanelmodel2 <- lm(fm, jamdata, subset = year == 1997) #the median year
+  basicpanelmodel3 <- lm(fm, jamdata, subset = year == 2005) #the maximum year
+  
+    stargazer(basicpanelmodel1, basicpanelmodel2, basicpanelmodel3, title = "Table 2: Comparison Between the Basic Models", no.space = TRUE, dep.var.caption = "OLS", header = FALSE, digits = 3, df = FALSE, report = "vc*s", star.cutoffs = c(0.10, 0.05, 0.01), model.names = FALSE, object.names = FALSE,  model.numbers =  FALSE, keep.stat = c("rsq", "f"), type = "text")
+
+  pooledpanelmodel <- plm(fm, jamdata, model = "pooling")
+    stargazer(pooledpanelmodel, title = "Table 3: Summary of the Pooled Model", no.space = TRUE, dep.var.caption = "OLS", header = FALSE, digits = 3, df = FALSE, report = "vc*s", star.cutoffs = c(0.10, 0.05, 0.01), model.names = FALSE, object.names = FALSE,  model.numbers =  FALSE, keep.stat = c("rsq", "f"), type = "text")
+    
+```
+
+*Simple Fixed Effects Panel Model*
+
+However, these simple linear analyses may not have accounted for some other unobserved variables in the data, that is, share of children under 16 years of age in household or different levels of hurricane intensity that may affect Jamaica's economic welfare. Therefore a simple fixed effects panel model was utilized to correct the issue by holding all unobserved factors that differ from year to year constant. 
+
+The following the results display the panel analysis of the data conducted using a basic panel regression model where the years were pooled, unobservable variables were kept constant, but time fixed effects were not accounted for. It can be noted that both average rainfall and average temperature were statistically significant at the 0.001 significance level and 5% level of significance respectively and exhibited a positive relationship with economic welfare. A 1-unit increase in average rainfall was associated with a 0.0008 unit enhancement in Jamaica's economic welfare. Similarly, an increase in average temperature resulted in an improvement of 0.06876 units in Jamaica's economic welfare. Notably, average temperature had a more significant impact on Jamaica's economic welfare as seen by its larger beta coefficient compared to average rainfall.
+
+```{r, echo=FALSE, warning=FALSE}
+
+   paneldatamodel <- plm(log_newtotalpercapitacons ~ rain1 + heatavg1, data = jamdata, index = c("year", "parish"), model = "within")
+    coeftest(paneldatamodel, vcov. =vcovHC, type = "HC1")
+    
+```
+
+The panel regression analysis result incorporating time fixed effects below indicates consistent findings to that of the no time fixed effects model as the estimated coefficients were close. It is evident that average temperatures have a greater impact on Jamaica's economic welfare compared to average rainfall. However, it should be noted that the estimated relationship is not affected by omitted variable bias due to those factors not remaining constant over time.
+```{r, echo=FALSE, warning=FALSE}
+
+    paneldatatefemodel <- plm(log_newtotalpercapitacons ~ rain1 + heatavg1, data = jamdata, index = c("year", "parish"), model = "within", effect = "twoways")
+      coeftest(paneldatatefemodel, vcov. = vcovHC, type = "HC1")
+
+```
+
+To get a more accurate picture of the estimated relationship, the results obtained below were obtained by estimating the model with more variables. 
+
+*Comprehensive Model*
+
+The results obtained from comprehensive regression analyses using different levels of hurricane wind intensity - wind10, wind11, wind12 - accounting for fixed effects aim to ensure accuracy and avoid omitted variable bias. The tabulated results (refer to Table 4) are structured as follows: column 1 represents results from wind10, column 2 represents results from wind11 and column 3 represents results from wind12.
+```{r, echo=FALSE, warning=FALSE}
+
+    panelmodel10 <- plm(log_newtotalpercapitacons ~ rain1 + heatavg1 + share_children + wind10, index = c("year", "parish"), model = "within", effect = "twoways", data = jamdata)
+      coeftest(panelmodel10, vcov. = vcovHC, type ="HC1")
+    
+    panelmodel11 <- plm(log_newtotalpercapitacons ~ rain1 + heatavg1 + share_children + wind11, index = c("year", "parish"), model = "within", effect = "twoways", data = jamdata)
+      coeftest(panelmodel11, vcov. = vcovHC, type ="HC1")
+    
+    panelmodel12 <- plm(log_newtotalpercapitacons ~ rain1 + heatavg1 + share_children + wind12, index = c("year", "parish"), model = "within", effect = "twoways", data = jamdata)
+      coeftest(panelmodel12, vcov. = vcovHC, type ="HC1")
+    
+        stargazer(panelmodel10, panelmodel11, panelmodel12, type = "text", digits = 2, title = "Table 4: Various Factors of Hurricanes and their Influence on Jamaica's Economic Welfare", out = "table2.txt")
+   
+```
+
+After examining each model, in model 1, hurricane intensity 10 shows a negative relationship with economic welfare and is statistically significant. In models 2 and 3, hurricane intensity 11 and hurricane intensity 12 also exhibit a negative relationship with economic welfare, being significant to their respective models. Therefore, a 1-unit increase in either hurricane intensity 10, 11 or 12 will reduce Jamaica's economic welfare by 0.04 units, 0.05 units and 0.05 units respectively. Average rainfall and average temperature showcased a positive and statistically significant relationship with economic welfare in all models. A 1-unit increase in either average rainfall or average temperature will improve Jamaica's economic welfare by 0.002 units and 0.06 units respectively. However, the share of variable had a negative relationship with economic welfare across all models and is statistically significant. That is, a 1-unit increase in share of children under 16 years of age in household will lead to a reduction in Jamaica's economic welfare by 0.86 units. Therefore, it can be concluded that average rainfall and average temperature positively impact Jamaica's economic welfare, while the different levels of hurricane intensity and share of children under 16 years of age in household negatively impact Jamaica's economic welfare.
+
+```{r, echo=FALSE, warning = FALSE}
+
+   panelmodel <- plm(log_newtotalpercapitacons ~ rain1 + heatavg1 + share_children + wind10 + wind11 + wind12, index = c("year", "parish"), model = "within", effect = "twoways", data = jamdata)
+      coeftest(panelmodel, vcov. = vcovHC, type ="HC1")
+      
+        stargazer(panelmodel, type = "text", digits = 2, title = "Tabe 5: Various Factors of Hurricanes and their Influence on Jamaica's Economic Welfare", out = "table2.txt")
+        
+```
+A comprehensive regression model was executed with all independent variables - average rainfall, average temperature, different levels of hurricane of intensity, and the number of children under 16 years  of age in a household - to gain a thorough understanding of all the estimates and to consider fixed effects. In Table 5, average rainfall, average temperature, and share of children under 16 years of age in household were found to be significant in the model at the 1% significance level. Average rainfall and average temperature had a positive relationship with economic welfare indicating that a 1-unit increase in either average rainfall or average temperature will enhance Jamaica's economic welfare by 0.002 units and 0.06 units respectively. The share of children variable, on the other hand, had a negative relationship with economic welfare with a 1-unit increase in share of children under 16 years of age in household leading to Jamaica' s economic welfare to be reduced by 0.86 units. Notably, the different levels of hurricane intensity were not significant to the model. Hurricane intensity 10 and 11 exhibited a positive relationship with economic welfare, while hurricane intensity 12 demonstrated a negative relationship. 
+
+Seeing that average temperature, average rainfall and share of children under 16 years of age in household have an effect on the data, we can test their joint significance. The results below demonstrate that the  F-statistic is 361.43. This indicates a high joint significance of the variables in the model, implying that the independent variables have a significant combined influence on the dependent variable and that the overall model is statistically significant.
+```{r, echo=FALSE, warning=FALSE}
+
+  linearHypothesis(panelmodel, test = "F", c("rain1","heatavg1", "share_children"), vcov. = vcovHC, type = "HC1")
+
+```
+
+
+*Extreme value Modelling Method: Point Over Threshold using Wind Intensity Levels*
+
+Disasters in developing countries result in two significant negative outcomes: setbacks in development indicators and the need to address a widening gap in social, economic, and physical investments due to the destruction of assets and losses, leading to reduced flows and capacities (Zapata & Madrigal, 2009). The Point Over Threshold model will be utilized to model the probability distribution of the extreme event (hurricanes) in order to calculate national damages.
+
+Hurricane Intensity (Wind Intensity: Index 10)
+
+Based on the graph below, we observe frequent surges in the data, indicating multiple occurrences of hurricanes per year. Therefore, it is more appropriate to utilize the Point Over Threshold model rather than the Block Maxima model when analyzing the data.
+```{r, echo=FALSE, warning=FALSE}
+
+df <- IndividualFinalAssignment
+    df <- na.omit(df)
+      
+      plot(df$wind10, type = "h",
+         col = "lightblue",
+         xlab = "Year",
+         ylab = "Wind10 (Wind Intensity)")
+```
+When utilizing the Point Over Threshold model, the objective is to determine a threshold for the data to better understand these extreme events. After analyzing a mean residual life (MRL) plot, it was determined that a suitable threshold for modeling the data appears to be 1.4.
+```{r, echo=FALSE, warning=FALSE}
+      
+      mrlplot(df$wind10)
+
+```
+
+In order to achieve accuracy with the Point Over Threshold method, the data was adjusted to an annual scale. Consequently, this modification alters the return period to 1/pny year.
+```{r, echo=FALSE, warning=FALSE}
+
+trange <- range(df$year)
+    trange 
+  nyears <- trange[2] - trange[1] + 1
+    dimd <- dim(df)
+      dimd
+  nevents <- dimd[1]
+    nevents / nyears
+
+```
+Following the conversion, Jamaica is projected to encounter an annual wind intensity of 967 with respect to index 10.
+
+After modelling the data using a Peak Over Threshold (POT) model with a threshold of 1.4 and time units of 967 per year, the following results were obtained:
+```{r, echo=FALSE, warning=FALSE}
+
+ fitD <- fevd(df$wind10, threshold = 1.4, type = "GP", time.units = "967/year")
+      ci(fitD, type = "parameter")
+
+```
+The true population shape parameter was estimated to be -0.01150214 with a 95% confidence interval of (-0.075031353, 0.05202724). The confidence interval contains 0 when testing the hypothesis that losses are limitless (null hypothesis) against losses not being limitless (alternative hypothesis), the conclusion then would be that losses are limitless and wind intensity of index 10 has destructive capabilities.
+
+```{r, echo=FALSE, warning=FALSE}
+
+ plot(fitD, "qq")
+
+```
+
+A QQ plot, short for Quantile-Quantile plot, is a graphical tool used to assess if a data set follows a certain probability distribution.If the data points fall approximately along a straight line, it suggests that the data follows the theoretical distribution being compared to.In the QQ plot shown above, most observations align closely with the reference line, particularly the lower values, following its trend. However, the higher values show some deviation from the line. Despite the presence of outliers, we can conclude that the model is a good fit.
+
+For the return level for the POT model, the results are as follows:
+```{r, echo=FALSE, warning=FALSE}
+
+ plot(fitD, "rl")
+
+# Return Levels    
+    return.level(fitD, c(6, 12, 15))
+      ci(fitD, type = "return.level", return.period = 15)
+
+```
+
+In comparison to the initial QQ plot, the slope of the line in this graph is shallower, and it includes confidence bands signifying event recurrence certainty. Most points in the subsequent graph lie within the confidence bands, enhancing predictability. However, the points do not align precisely with the best fit line. Additionally, widening bands coincide with higher observed data points extending beyond them, implying increased difficulty in predicting such extreme events.
+
+As per the Organization of Disaster Preparedness and Emergency Management (ODPEM), Jamaica experiences roughly 6 hurricanes annually (2019). To determine the individual return levels, the ddesired return levels are 6 years, 12 years and 15 years. Upon reviewing the return plot, we can observe that a 6-year period corresponds to about 9.652038 wind intensity. There was no notable escalation in hurricane wind intensity over the 12-year and 15-year return periods, registering wind intensities of 10.560229 and 10.851064 respectively. These findings indicate that a hurricane wind intensity index of 10 is moderately destructive. 
+Upon calculating the confidence interval, it is evident that the interval is narrow i.e. (9.2918, 12.4103) so there is reduced uncertainty surrounding the estimate for the 15-year return period of 10.851. This observation implies that the hurricane wind intensity index of 10 possesses a moderate level of destructive power. 
+
+We may also want to determine the likelihood of hurricane losses exceeding a certain value, so we calculate the probability of exceedance. Based on literature, the probability of exceedance for 6, 12 and 15 hurricane wind intensity of index 10 in Jamaica is as follows:
+```{r, echo=FALSE, warning=FALSE}
+
+    probst <- pextRemes(fitD, c(6, 12, 15), lower.tail= FALSE)
+        probst
+
+```
+Therefore, the probability of a hurricane wind intensity of index 10:
+ *a. exceeding wind intensity 6 is 3.599903e-02, so we expect a 0.03% exceedance.
+ *b. exceeding wind intensity 12 is 3.856678e-04, so we expect a 0.003% exceedance. 
+ *c. exceeding wind intensity 15 is 3.641135e-05, so we expect a 0.0003% exceedance.  
+
+
+
+
+Hurricane Intensity (Wind Intensity: Index 11)
+
+Based on the provided plots, it is suitable to employ the Point Over Threshold Method to analyze this extreme event. The plots demonstrate a distribution that fluctuates regularly, making this method appropriate. Utilizing this approach will enable a comprehensive exploration of the effects of hurricanes on Jamaica's economic welfare. Notably, the MRL plot indicates a threshold of 1.3. 
+```{r, echo=FALSE, warning=FALSE}
+
+plot(df$wind11, type = "h",
+       col = "blue",
+       xlab = "Year",
+       ylab = "Wind11 (Wind Intensity)")  # time series plot
+# damage plot  
+    mrlplot(df$wind11) 
+
+```
+
+Since we are working with the same data, there is no need to transform the data into a annual basis. Consequently, the estimated hurricane wind intensity level of index 11 would remain unchanged i.e. 967 per year, as previously calculated. However, the true population shape parameter will differ.
+
+```{r, echo=FALSE, warning=FALSE}
+  fitC <- fevd(df$wind11, threshold = 1.3, type = "GP", time.units = "967/year")
+      ci(fitC, type = "parameter")
+```
+Now the true population shape parameter falls between -0.09617283 and 0.01804417. There is clear indication that the confidence interval includes 0 so we can conclude that losses is not limitless for the hurricane wind intensity of index 11.
+
+To assess the model fit, we plot a QQ plot. The results are as follows: 
+```{r, echo=FALSE, warning=FALSE}
+
+plot(fitC, "qq")
+
+```
+Notice that majority of the observations align with the line, particularly the smaller values. However, as the data points become larger (outliers), the observations do not fall on the line, suggesting they are not a good fit to the model. Despite the presence of outliers, we can still conclude that the model is a good fit.
+
+The return level plot for the POT model can be found below: 
+```{r, echo=FALSE, warning=FALSE}
+
+   plot(fitC, "rl")
+
+```
+Most points in the subsequent graph lie within the confidence bands, enhancing predictability. However, these points do not perfectly align with the best fit line. Moreover, the widening bands correspond to higher observed data points that extend beyond them, indicating challenges in predicting such extreme events.
+
+```{r, echo=FALSE, warning=FALSE}
+
+ return.level(fitC, c(6, 12, 15))
+      ci(fitC, type = "return.level", return.period = 15)
+
+```
+To determine the individual return levels, the return levels desired are 6 years, 12 years and 15 years. Upon reviewing the return plot, we can observe that a 6-year period corresponds to about 9.368783 wind intensity. There was no notable escalation in hurricane wind intensity over the 12-year and 15-year return periods, registering wind intensities of 10.161589 and 10.412282 respectively. These findings indicate that a hurricane wind intensity index of 11 is not deemed highly destructive. 
+Upon calculating the confidence interval, it is evident that the interval is narrow i.e. (9.0987, 11.7258) so there is reduced uncertainty surrounding the estimate for the 15-year return period of 10.412. This observation implies that the hurricane wind intensity index of 11 possesses moderate destructive power.
+
+
+```{r, echo=FALSE, warning=FALSE}
+
+    probst <- pextRemes(fitC, c(6, 12, 15), lower.tail= FALSE)
+      probst
+
+```
+Therefore, the probability of a hurricane wind intensity of index 10:
+ *a. exceeding wind intensity 6 is 3.323766e-02, so we expect a 0.03% exceedance.
+ *b. exceeding wind intensity 12 is 1.968578e-04, so we expect a 0.0001% exceedance. 
+ *c. exceeding wind intensity 15 is 9.707089e-06, so we expect a 0.000009% exceedance.  
+
+
+
+Hurricane Intensity (Wind Intensity: Index 12)
+
+Based on the subsequent plots, it is suitable to utilize the Point Over Threshold Method to analyze this extreme event. The plots demonstrate a distribution that fluctuates regularly, making this method appropriate. Utilizing this approach will enable a comprehensive exploration of the impact of hurricanes on Jamaica's economic welfare. Notably, the MRL plot indicates a threshold of 1.3. 
+```{r, echo=FALSE, warning=FALSE}
+
+plot(df$wind12, type = "h",
+       col = "blue",
+       xlab = "Year",
+       ylab = "Wind11 (Wind Intensity)")  # time series plot
+# damage plot  
+    mrlplot(df$wind12) 
+
+```
+
+Since we are working with the same data, there is no need to transform the data into a annual basis. Consequently, the estimated hurricane wind intensity level of index 12 would remain unchanged i.e. 967 per year, as previously calculated. However, the true population shape parameter will differ.
+
+```{r, echo=FALSE, warning=FALSE}
+
+ fitB <- fevd(df$wind12, threshold = 1.3, type = "GP", time.units = "967/year")
+      ci(fitB, type = "parameter")
+
+```
+The true population shape parameter falls between -0.09617283 and 0.01804417. There is clear indication that the confidence interval includes 0 so we can conclude that losses is not limitless for the hurricane wind intensity of index 12. This suggest that hurricane wind intensity of index 12 have destructive power which can greatly affect economic welfare.
+
+To assess the model fit, we plot a QQ plot. The results are as follows: 
+```{r, echo=FALSE, warning=FALSE}
+
+plot(fitB, "qq")
+
+```
+Notice that majority of the observations align with the line, particularly the smaller values. However, as the data points become larger (outliers), the observations do not fall on the line, suggesting they are not a good fit to the model. Despite the presence of outliers, we can still conclude that the model is a good fit.
+
+The return level plot for the POT model can be found below: 
+```{r, echo=FALSE, warning=FALSE}
+
+   plot(fitB, "rl")
+
+```
+Most points in the subsequent graph lie within the confidence bands, enhancing predictability. However, these points do not perfectly align with the best fit line. Moreover, the widening bands correspond to higher observed data points that extend beyond them, indicating challenges in predicting such extreme events.
+
+```{r, echo=FALSE, warning=FALSE}
+
+ return.level(fitB, c(6, 12, 15))
+      ci(fitB, type = "return.level", return.period = 15)
+
+```
+To determine the individual return levels, the return levels desired are 6 years, 12 years and 15 years. Upon reviewing the return plot, we can observe that a 6-year period corresponds to about 9.368783 wind intensity. There was no notable escalation in hurricane wind intensity over the 12-year and 15-year return periods, registering wind intensities of 10.161589 and 10.412282 respectively. These findings indicate that a hurricane wind intensity index of 11 is not deemed highly destructive. 
+Upon calculating the confidence interval, it is evident that the interval is narrow i.e. (9.0987, 11.7258) so there is reduced uncertainty surrounding the estimate for the 15-year return period of 10.412. This observation implies that the hurricane wind intensity index of 12 possesses a moderate level of destructive power.
+
+
+```{r, echo=FALSE, warning=FALSE}
+
+    probst <- pextRemes(fitB, c(6, 12, 15), lower.tail= FALSE)
+      probst
+
+```
+Therefore, the probability of a hurricane wind intensity of index 10:
+ *a. exceeding wind intensity 6 is 3.323766e-02, so we expect a 0.03% exceedance.
+ *b. exceeding wind intensity 12 is 1.968578e-04, so we expect a 0.0001% exceedance. 
+ *c. exceeding wind intensity 15 is 9.707089e-06, so we expect a 0.000009% exceedance.
+
+
+**Conclusion**
+
+The impact of hurricanes on the economic welfare of Jamaica reveals insightful implications for policy development not in Jamaica but in entire the Caribbean region. The research findings underscored the statistical significance of average rainfall, average temperature, and the share of children under 16 years of age in households. Notably, both average temperature and average rainfall were found to positively influence Jamaica's economic welfare, aligning with the country's emphasis on its diverse flora and fauna to attract tourism. Conversely, the share of children in households exhibited a negative impact, indicating a decrease in household purchasing power as the number of children increases. Although the varying levels of hurricane intensity did not exhibit significance in the comprehensive regression analyses, these variables were instrumental in modeling the extreme event. The study revealed that these variables shared similar probabilities and were notably significant in the Point Over Threshold (POTS) model, emphasizing their relevance in understanding the impact of hurricanes on economic welfare.
+
+In light of these findings, several policy recommendations can be proposed to mitigate the economic impact of hurricanes and enhance resilience in the Caribbean region. One such policy recommendation is the implementing robust disaster preparedness plans that factor in the specific vulnerabilities of households with children, ensuring adequate resources are allocated to safeguard their well-being during and after hurricanes. Also, the introduction of targeted social support programs for households with a large number of children - or large families in general - as a means to alleviate financial strain and enhance their resilience to economic shocks caused by hurricanes. Hurricanes generate millions in losses every year therefore investing in infrastructure resilience such as focusing on enhancing building codes, coastal protection, and early warning systems are few ways to withstand the effects of extreme weather events. Finally, developing sustainable environmental practices which prioritize environmental conservation and climate resilience can help safeguard natural assets while promoting economic growth.
+
+
+By integrating these policy recommendations into the broader framework of disaster risk reduction and economic development, policymakers in the Caribbean can proactively address the challenges posed by hurricanes and foster sustainable growth and resilience in the region.
+
+
+
+
+**PART TWO**
+
+**Introduction**
+
+Hurricanes act as large external shocks potentially causing considerable damage to crops  and livestock in the Caribbean which can have long-term implications (Mohan & Strobl, 2017).The impact of hurricanes on agriculture is a crucial topic that deserves attention due to its far-reaching consequences on food production in the Caribbean. However, historical data on this topic are insufficient for accurate future assessment due to evolving climate conditions or limited return period maps for the entire region (Mohan & Strobl, 2017). The motivation behind choosing this topic stems from a deep concern for the vulnerability of agricultural systems to extreme weather events like hurricanes. Hurricanes have been increasing in frequency and intensity due to climate change, posing a significant threat to agricultural productivity not only in the Caribbean but also in the global space. By delving into the impact of hurricanes on agriculture, valuable insights can be gained to develop strategies for resilience and adaptation.
+
+**Methodology**
+
+In this proposed project, the primary aim is to evaute both the direct and indirect effects of hurricanes on agriculture. The methodology employed involved calculating expected losses and related hurricane wind risk concepts for Caribbean agriculture through the modelling of losses as a function of hurricane wind speed (Mohan & Strobl, 2017).
+
+This analysis will focus on the immediate damage caused by strong winds, heavy rainfall, and flooding on crops, livestock, and infrastructure in the Caribbean. To do this, a study examines specific individual land masses where agriculture activities are conducted in the Caribbean (Mohan & Strobl, 2017). To estimate the expected total agricultural losses, the probabilities of damaging hurricane winds will be taken into account. These variables are key inputs for estimating country-specific expected losses due to hurricane.
+
+To identify agricultural areas within the Caribbean islands, the research utilized gridded spatial maps derived from satellites data like the GLC 2000 database. It should be noted, however, that discrepancies, specially for smaller islands, may arise between the satellite derived images and actual cropland areas. Consequently, additional predictive factors such as population density, elevation, and distance to the shore were considered to enhance the identification of cropland areas (Mohan & Strobl, 2017). Furthermore, a fractional Probit model was utilized to predict the probability of cropland presence based on these factors, highlighting their significance in determining cropland locations. The study will delve into the long-term consequences by incorporating synthetic hurricane tracks to assess probabilities of local wind speed, historical data and satellite derived information to illuminate the vulnerability of Caribbean agriculture to hurricane-induced losses. 
+
+Return periods and losses will be computed for each country using data from 13 Caribbean island economies, including their total crop production and weather conditions spanning from 1980 to 2010 (Mohan & Strobl, 2017). By understanding the impact of hurricanes on agriculture, appropriate mitigation strategies can be identified to minimize losses and enhance the sector's resilience.
+
+
+
+**Discussion**
+After performing these calculations, it was revealed that hurricane return periods vary across the Caribbean some countries having a low return period of 4 years where others can expect a damaging hurricane to occur within at least 10 years (Mohan & Strobl, 2017). The expected likelihood of a recurrence of a damaging hurricane in the Caribbean is 13 years. Expected losses for the entire region from these damaging hurricanes exceed 211,100 tons of cropland production valued over US$607 million (MOhan & Strobl, 2017).
+
+Smaller islands like Antigua and Barbuda, St Kitts and Nevis show higher venerability when compared to larger countries such as the Dominican Repubic or Jamaica who are likely on average to experience minor setbacks in their cropland production. Mohan and strobl pointed to smaller countries expecting losses in agriculture given a damaging hurricane strike can range between 4 percent and 21 percent while larger Caribbean states can expected losses less than 2 percent (2017). Therefore, the smaller Caribbean states are relatively more adversely affected by hurricanes in terms of agriculture compared to their larger counterparts.
+
+It should be noted that the different categorizations of agricultural sectors including agricultural-based, tree crop-based or production concentrated greatly impact the susceptibility of countries to hurricanes (Mohan & Strobl, 2017). This means that countries who are more reliant on agriculture, concentrated in specific products, or with tree-based crops suffer more significant losses. Mohan & Strobl saw that average losses were largest for those countries more agriculture-based (2017). Total expected damages exceeding 305,000 tons could be valued over US$1.2 billion could be expected for these countries while for those who are more production concentrated type of countries are 169, 656 tons with an estimated value of US681m (Mohan & Strobl, 2017). Evidently, differences in damage will be noticeable across these agricultural subgroups, with higher vulnerability linked to specific agricultural characteristics. 
+
+
+**Conclusion**
+
+The Caribbean is expected to continue to experience damaging from which the agricultural sector will be greatly affected, where on average they should expect a destructive hurricane every 13 years. As expected a reduction in total agricultural production as well as see a reduction in the percentage in GDP due to agricultural losses for the region in the face of hurricane (Mohan & Strobl, 2017). At the individual country level, the results may vary. By studying the effects, it is evident that larger Caribbean states such as Jamaica, Cuba have much lower return periods where the return period ranged from 2 years to 10 years. For smaller Caribbean islands, however, can expect to occur a damaging hurricane every year. Also, the structure of the agricultural sector greatly affect an island's susceptibility to hurricanes. Islands who are heavily reliant are expected to experience to greater losses in the face of a damaging hurricane. Vulnerabilities to hurricanes underscores the need disaster mitigation in the agriculture sectors, especially in smaller, argicultural-dependent countries.  
+
+The policy implications of the expected effects of hurricanes on agriculture are significant. Policymakers can use the findings from this project to formulate and implement policies that promote climate-smart agriculture and disaster risk management. These policies may include investing in early warning systems, improving agricultural infrastructure to withstand extreme weather events, and providing financial support to farmers affected by hurricanes. By integrating the project's recommendations into policy frameworks, governments can enhance the resilience of the agricultural sector and ensure food security in the face of climate change challenges.
+
+In conclusion, exploring the impact of hurricanes on agriculture through this proposed project is essential for understanding the vulnerabilities of the sector and developing effective mitigation strategies. By studying the direct and indirect effects of hurricanes on agriculture, valuable insights can be generated to inform policy decisions and build a more resilient agricultural system. This project has the potential to contribute significantly to enhancing the adaptive capacity of the agricultural sector in the face of increasing climate-related risks.
+
+
+
+
+
+**References**
+
+
+Charvériat, C. (2000). Natural disasters in Latin America and the Caribbean: An overview of risk.
+
+Mohan, P., & Strobl, E. (2017). A hurricane wind risk and loss assessment of caribbean agriculture. *Environment and Development Economics*, 22(1), 84-106. doi:https://doi.org/10.1017/S1355770X16000176
+
+Strobl, E. (2012). The economic growth impact of natural disasters in developing countries: Evidence from hurricane strikes in the Central American and Caribbean regions. *Journal of Development Economics*, 97(1), 130–141. https://doi.org/10.1016/j.jdeveco.2010.12.0002
+
+Office of Disaster Preparedness and Emergency Management (ODPEM). (2019). Hurricanes. https://www.odpem.org.jm/hurricanes/#:~:text=After%20mid-September%2C%20the%20principal,significant%20deviations%20from%20this%20average.
+
+Zapata Martí, R., & Madrigal, B. (2009). Economic impact of disasters: evidence from DALA assessments by ECLAC in Latin America and the Caribbean. ECLAC.
+
+
+
+
+
+
+**Appendix**
+```{r}
+
+# Set the working directory
+
+  setwd("C:/Users/white/OneDrive/ECON3050 Final Assignment")
+
+# Load libraries 
+
+  library(AER)
+  library(plm)
+  library(stargazer)
+  library(extRemes)
+  library(ggplot2)
+  library(readxl)
+  library(dplyr)
+  library(grid)
+
+# Load data frame
+
+  IndividualFinalAssignment <- read_excel("C:/Users/white/OneDrive/ECON3050 Final Assignment/IndividualFinalAssignment.xls")
+  jamdata <- pdata.frame(IndividualFinalAssignment, index = c("cluster"))
+  data(jamdata)
+  is.data.frame(jamdata)
+  
+# Inspect the dataframe 
+  
+  dim(jamdata)
+  str(jamdata) #displays contents of the data frame
+  head(jamdata) #displays the first 10 observations
+  tail(jamdata) #displays the last 10 observations
+  panelsum <- summary(jamdata[, c(1, 8, 9)] )
+    stargazer(panelsum, title = "Summary of the Variables: Year, Average Temperature, and Economic Welfare", no.space = TRUE, dep.var.caption = "OLS", header = FALSE, digits = 3, df = FALSE, report = "vc*s", star.cutoffs = c(0.10, 0.05, 0.01), model.names = FALSE, object.names = FALSE,  model.numbers =  FALSE, keep.stat = c("rsq", "f"), type = "text")
+    
+```
+
+
+```{r}
+# Panel data analysis
+
+data("jamdata", package = "AER")
+  fm <- log_newtotalpercapitacons ~ rain1 + heatavg1
+
+# Basic Model
+  basicpanelmodel1 <- lm(fm, jamdata, subset = year == 1990) #the minimum year
+    summary(basicpanelmodel1)
+
+  basicpanelmodel2 <- lm(fm, jamdata, subset = year == 1997) #the median year
+    summary(basicpanelmodel2)
+
+  basicpanelmodel3 <- lm(fm, jamdata, subset = year == 2005) #the maximum year
+    summary(basicpanelmodel3)
+
+    stargazer(basicpanelmodel1, basicpanelmodel2, basicpanelmodel3, title = "Table 2: Comparision Between the Basic Models", no.space = TRUE, dep.var.caption = "OLS", header = FALSE, digits = 3, df = FALSE, report = "vc*s", star.cutoffs = c(0.10, 0.05, 0.01), model.names = FALSE, object.names = FALSE,  model.numbers =  FALSE, keep.stat = c("rsq", "f"), type = "text")
+
+    
+# Pooled Panel Model
+  pooledpanelmodel <- plm(fm, jamdata, model = "pooling")
+    summary(pooledpanelmodel)
+   
+     stargazer(pooledpanelmodel, title = "Table 3: Summary of the Pooled Model", no.space = TRUE, dep.var.caption = "OLS", header = FALSE, digits = 3, df = FALSE, report = "vc*s", star.cutoffs = c(0.10, 0.05, 0.01), model.names = FALSE, object.names = FALSE,  model.numbers =  FALSE, keep.stat = c("rsq", "f"), type = "text")
+    
+# Simple Fixed Effect Panel Model 
+    paneldatamodel <- plm(log_newtotalpercapitacons ~ rain1 + heatavg1, data = jamdata, index = c("year", "parish"), model = "within")
+      coeftest(paneldatamodel, vcov. =vcovHC, type = "HC1")
+    
+    paneldatatefemodel <- plm(log_newtotalpercapitacons ~ rain1 + heatavg1, data = jamdata, index = c("year", "parish"), model = "within", effect = "twoways")
+    coeftest(paneldatatefemodel, vcov. = vcovHC, type = "HC1")
+    
+
+# Comprehensive Model
+    panelmodel10 <- plm(log_newtotalpercapitacons ~ rain1 + heatavg1 + share_children + wind10, index = c("year", "parish"), model = "within", effect = "twoways", data = jamdata)
+      coeftest(panelmodel10, vcov. = vcovHC, type ="HC1")
+    
+    panelmodel11 <- plm(log_newtotalpercapitacons ~ rain1 + heatavg1 + share_children + wind11, index = c("year", "parish"), model = "within", effect = "twoways", data = jamdata)
+      coeftest(panelmodel11, vcov. = vcovHC, type ="HC1")
+    
+    panelmodel12 <- plm(log_newtotalpercapitacons ~ rain1 + heatavg1 + share_children + wind12, index = c("year", "parish"), model = "within", effect = "twoways", data = jamdata)
+      coeftest(panelmodel12, vcov. = vcovHC, type ="HC1")
+    
+        stargazer(panelmodel10, panelmodel11, panelmodel12, type = "text", digits = 2, title = "Table 4: Various Factors of Hurricanes and their Influence on Jamaica's Economic Welfare", out = "table2.txt")
+    
+    panelmodel <- plm(log_newtotalpercapitacons ~ rain1 + heatavg1 + share_children + wind10 + wind11 + wind12, index = c("year", "parish"), model = "within", effect = "twoways", data = jamdata)
+      coeftest(panelmodel, vcov. = vcovHC, type ="HC1")
+      
+        stargazer(panelmodel, type = "text", digits = 2, title = "Tabe 5: Various Factors of Hurricanes and their Influence on Jamaica's Economic Welfare", out = "table2.txt")
+        
+# Testing significance of variables 
+        linearHypothesis(panelmodel, test = "F", c("rain1","heatavg1", "share_children"), vcov. = vcovHC, type = "HC1")
+        
+```
+
+
+```{r}
+
+# Modelling Extreme Events: Point Over Threshold Estimation
+
+# wind 10 
+
+  df <- IndividualFinalAssignment
+    df <- na.omit(df)
+      summary(df$wind11)
+
+  plot(df$wind10, type = "h",
+       col = "lightblue",
+       xlab = "Year",
+       ylab = "Wind10 (Wind Intensity)")  # time series plot
+# damage plot  
+  mrlplot(df$wind10) 
+# adjusting the time unit 
+  trange <- range(df$year)
+    trange 
+  nyears <- trange[2] - trange[1] + 1
+    dimd <- dim(df)
+      dimd
+  nevents <- dimd[1]
+    nevents / nyears
+# POTS Estimation
+    fitD <- fevd(df$wind10, threshold = 1.4, type = "GP", time.units = "967/year")
+      ci(fitD, type = "parameter")
+# QQ Plot
+    plot(fitD, "qq")
+# POTS: Return Level Plot
+    plot(fitD, "rl")
+# Return Levels    
+    return.level(fitD, c(6, 12, 15))
+      ci(fitD, type = "return.level", return.period = 15)
+# Calculate the probability of exceedence   
+      probst <- pextRemes(fitD, c(6, 12, 15), lower.tail= FALSE)
+        probst
+    
+    
+# Wind 11 
+
+   plot(df$wind11, type = "h",
+       col = "blue",
+       xlab = "Year",
+       ylab = "Wind11 (Wind Intensity)")  # time series plot
+# damage plot  
+    mrlplot(df$wind11) 
+# POTS Estimation
+    fitC <- fevd(df$wind11, threshold = 1.3, type = "GP", time.units = "967/year")
+      ci(fitC, type = "parameter")
+# QQ Plot
+    plot(fitC, "qq")
+# POTS: Return Level Plot
+    plot(fitC, "rl")
+# Return Levels    
+    return.level(fitC, c(6, 12, 15))
+      ci(fitC, type = "return.level", return.period = 15)
+# Calculate the probability of exceedence   
+    probst <- pextRemes(fitC, c(6, 12, 15), lower.tail= FALSE)
+      probst
+        
+        
+ 
+# Wind 12       
+
+      plot(df$wind12, type = "h",
+       col = "darkblue",
+       xlab = "Year",
+       ylab = "Wind11 (Wind Intensity)")  # time series plot
+# damage plot  
+    mrlplot(df$wind12) 
+# POTS Estimation
+    fitB <- fevd(df$wind12, threshold = 1.3, type = "GP", time.units = "967/year")
+      ci(fitB, type = "parameter")
+# QQ Plot
+    plot(fitB, "qq")
+# POTS: Return Level Plot
+    plot(fitB, "rl")
+# Return Levels    
+    return.level(fitB, c(6, 12, 15))
+      ci(fitB, type = "return.level", return.period = 15)
+# Calculate the probability of exceedence   
+    probst <- pextRemes(fitB, c(6, 12, 15), lower.tail= FALSE)
+      probst
+
+```
+
+
+
+
