@@ -1,4 +1,4 @@
-Project Title: Business Resilience During COVID-19 in the Caribbean
+Project Title: Business Resilience During COVID-19 in the Caribbean 
 Overview: Using R to analyze how businesses in the Caribbean region have weathered the COVID-19 storm.
 
 Goals:
