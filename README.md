@@ -46,7 +46,6 @@
 
   set.seed(763)
 
-
 # Create a 90% sample of the dataset 
 
   sample_indices <- sample(nrow(firms), size = 0.9 * nrow(firms))
@@ -75,15 +74,15 @@
 
       
 # Firm type-----------------------------------------------------------------------------
-# Re-code B1's column to show the names of the firm type
-# The variable name was changed from B1 to firm_type to make the variable more recognizable
+# Re-code B1's column to show the names of the types of firm in the Caribbean
+# The variable name was changed from B1 to firm_type to make the variable more recognizable for analysis
       
   sample$firm_type <- ifelse(sample$B1 %in% c(1, 2), "Shareholding firms",
                        ifelse(sample$B1 %in% c(4, 5), "Partnerships", "Sole proprietorship"))
     sample <- sample[!is.na(sample$firm_type), ]  #To remove NAs from the firm_type column
     
   
-# Calculating percentages for each category
+# Calculating percentages for each firm type
    
   dummy_sample1 <- sample %>%
     count(firm_type) %>%
@@ -93,7 +92,7 @@
 # Creating a bar chart with percentages
      
    ggplot(dummy_sample1, aes(x = reorder(firm_type, percentage), y = percentage, fill = firm_type, label = sprintf("%.1f%%", percentage))) +
-    geom_bar(stat = "identity") +     #Use data values as visual ones
+    geom_bar(stat = "identity") +     # Use data values as visual ones
     geom_text(vjust = -0.5) +
     labs(title = "Type of Firms in the Region", 
              x = "Firm Type", 
@@ -103,14 +102,14 @@
     ggeasy::easy_center_title()
 
       
-#Main Market--------------------------------------------------------------------------------
+# Main Market--------------------------------------------------------------------------------
 # Re-code the D7A column to display the name of the market the firm produces for
   
   sample$D7A <- ifelse(sample$D7A == 1, "local",
                  ifelse(sample$D7A == 2, "national",
                         ifelse(sample$D7A == 3, "international", NA)))
 
-# Calculating percentages for each category in 'D7A'
+# Calculating percentages for each market in 'D7A'
 
   dummy_sample2 <- sample %>%
     filter(!is.na(D7A)) %>%
@@ -544,14 +543,17 @@ sample1 <- sample %>%
   select(COUNTRY, SAMPLING_STRATUM)
 
 # Select columns from 'sample' data set to create 'sample_data5'
+
 sample_data5 <- sample %>%
   select(D7C, E1B1, COV_B1A, COV_D1A1A_X, COV_A7A, COV_B2A1)
 
 # Merge the two data sets using cbind()
+
 merged_data <- cbind(sample_data5, sample1)
 
 
 # Remove all numbers less than 0 from e1b1 and cov_b1a columns
+
 merged_data <- merged_data %>% filter(COV_B1A > -44)
 merged_data <- merged_data %>% filter(COV_D1A1A_X > -44)
 merged_data <- merged_data %>% filter(D7C > -77)
@@ -567,15 +569,18 @@ merged_data$COV_B2A1 <- ifelse(merged_data$COV_B2A1 == 2 | merged_data$COV_B2A1 
     
 # Calculate the change in capacity utilization
 # Subtract cov_b1a from e1b1
+
 merged_data$capacity_difference <- merged_data$E1B1 - merged_data$COV_B1A
 
 
 # Determine increase, decrease, or no change
+
 merged_data$capacity_status <- ifelse(merged_data$capacity_difference > 0, "increase",
                     ifelse(merged_data$capacity_difference < 0, "decrease", "no change"))
 
 
 # Recode D7C column
+
 merged_data$D7C <- factor(merged_data$D7C, levels = c(1, 2, 3), labels = c("increased", "remained the same", "decreased"))
 
 
@@ -585,6 +590,7 @@ merged_data$COV_D1A1A_X <- factor(merged_data$COV_D1A1A_X, levels = c(1, 2, 3), 
 
 # Index Creation ------------------------------------------------------------
 # Recode the variables 
+
 index_data <- merged_data %>%
   mutate(
     D7C = case_when(
@@ -608,7 +614,7 @@ index_data <- merged_data %>%
     COV_B2A1 <- case_when(
       COV_B2A1 == "no risk" ~ "0", 
       COV_B2A1 == "moderate risk" ~ "1",
-      COV_B2A1 == "high risk" ~ "2",
+      COV_B2A1 == "high risk" ~ "2",     #this was done so that higher values are linekd to a negative impact 
       TRUE ~ NA_character_
     )
   ) %>%
@@ -631,21 +637,25 @@ alpha_coefficient <- psych::alpha(subset_data_numeric, check.keys = TRUE)
 print(alpha_coefficient)
 
 
-#Calculate the denominator 
+# Calculate the denominator 
+
 max_capacity_status <- max(subset_data_numeric$capacity_status)
 max_COV_D1A1A_X <- max(subset_data_numeric$COV_D1A1A_X)
 max_D7C <- max(subset_data_numeric$D7C)
 max_COV_B2A1 <- max(subset_data_numeric$COV_B2A1)
 
-# calculate the denominator
+# Calculate the denominator
+
 denominator <- max_capacity_status + max_COV_D1A1A_X + max_D7C + max_COV_B2A1
-print(denominator)
+  print(denominator)
 
 # Calculate the index 
+
 subset_data_numeric$index <- (subset_data_numeric$capacity_status + subset_data_numeric$D7C + subset_data_numeric$D7C + subset_data_numeric$COV_B2A1 ) / denominator
 
 
 # Summary statistics of Index
+
 index_summary <- summary(subset_data_numeric$index)
 summary_table <- data.frame(
   Measure = c("Minimum", "1st Quartile", "Median", "Mean", "3rd Quartile", "Maximum"),
@@ -657,11 +667,13 @@ summary_table
 
 # Inferential Statistics-------------------------------------
 # Merge the two data sets using cbind()
+
 merged_data2 <- cbind(subset_data_numeric, index_data)
 
 #Prepare the data 
 # Select the columns that will be used to conduct the t-test 
-    sample_test1 <- merged_data2 %>%
+
+  sample_test1 <- merged_data2 %>%
       select(SAMPLING_STRATUM, index)
 
 
@@ -670,7 +682,8 @@ merged_data2 <- cbind(subset_data_numeric, index_data)
     sample_test1$industry <- factor(sample_test1$SAMPLING_STRATUM, levels = c(1, 2), labels = c("Manufacturing", "Services"))
 
 # Select the columns that will be used to conduct the t-test 
-    sample_test1 <- sample_test1 %>%
+
+  sample_test1 <- sample_test1 %>%
       select(industry, index)
 
 # Conduct the Independent Sample T Test and obtain the results 
@@ -741,7 +754,7 @@ cluster_data <- sample %>%
 
 # Compute proximity matrix
   
-  DistanceMatrix <- daisy(cluster_data,
+  DistanceMatrix <- daisy(cluster_data,   # the daisy function was used since both categorical and quantitative variables were used 
     metric = "gower",
     type = list(logratio = 3))
 
