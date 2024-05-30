@@ -1,0 +1,416 @@
+---
+title: "Assignment 2_1 Whitely 620148625"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+  pdf: default
+---
+
+
+```{r}
+#load libraries
+
+  library(foreign)
+  library(haven)
+  library(dplyr)
+  library(tidyr)
+  library(tidyverse)
+  library(ggplot2)
+  library(tinytex)
+  library(ggeasy)
+```
+
+
+```{r}
+#Import data set 
+
+  firms <- read_sav("C:/Users/white/Downloads/IFPG_COVID19_Final_Data_2020.sav")
+    View(firms) 
+    
+```
+
+
+```{r}
+#Set seed for reproducibility
+
+  set.seed(763)
+
+
+#Create a 90% sample of the dataset 
+
+  sample_indices <- sample(nrow(firms), size = 0.9 * nrow(firms))
+    firms_sample <- firms[sample_indices, ]
+  
+    
+#Inspect sample
+    
+      head(firms_sample)
+```
+
+
+```{r}
+
+    firms_sample2 <- firms_sample
+  
+#Re-code the COUNTRY column to show the country names instead their codes
+   country <- c(`123` = "Jamaica", `134` = "Antigua and Barbuda", `137` = "Barbados", 
+                      `138` = "Dominica", `139` = "Grenada", `140` = "Guyana", 
+                      `141` = "St Kitts and Nevis", `142` = "St Lucia", `143` = "St Vincent", 
+                      `144` = "Suriname", `155` = "Belize", `334` = "The Bahamas", 
+                      `780` = "Trinidad and Tobago")
+   
+   
+#To convert the Country column to character to avoid conversion issues
+     firms_sample2$COUNTRY <- as.character(firms_sample2$COUNTRY) 
+        firms_sample2$COUNTRY <- country[firms_sample2$COUNTRY]   
+
+         
+```
+
+Description of Demographics
+```{r} 
+#(a)Gender Composition of Ownership for each Firm:
+
+    firms1 <- firms_sample2
+
+
+#Re-coding B5A as Male-owned and Female-owned and dropping all the 3s
+
+    firms1$gender <- ifelse(firms1$B5A %in% c(1, 2), "Male-owned", ifelse(firms1$B5A %in% c(4, 5), "Female-owned", NA))
+      firms1 <- firms1[!is.na(firms1$gender), ] #to remove NAs from the gender column
+
+    
+#create a bar graph to represent gender
+    
+    ggplot(firms1, aes(x = gender)) + 
+      geom_bar() +
+        theme_light() + 
+          labs(
+            title = "Gender Composition of Ownership for Firms in the Caribbean", 
+            x = "Gender Composition of Owners/Shareholders",
+            y = "Count"
+             ) + 
+    #to add the count to each bar 
+              geom_text(stat = 'count', aes(label = ..count..), vjust = -0.5) + 
+                ggeasy::easy_center_title() #to centre the title of the graph
+```
+
+
+```{r}
+#(b)Main market for a firm's product/service: 
+
+  firms2 <- firms_sample2
+
+
+#Create a data frame with counts for each market using the D7A variable  
+
+    market <- data.frame(table(firms2$D7A))
+      
+    
+#Create a pie chart to represent the variable
+   
+    ggplot(market, aes(x = "", y = Freq, fill = Var1)) +
+      geom_bar(stat = "identity", width = 1) +
+        coord_polar("y", start = 0) +
+      #adds the frequency to each section 
+          geom_text(aes(label = Freq), position = position_stack(vjust = 0.5)) + 
+      #change the theme of the plot to hide the polar coordinates 
+            theme_void() +
+       #to add a legend to the plot
+              scale_fill_discrete(
+                name = "Main Markets", 
+                labels = c("Local", "National", "International")
+                 ) + 
+                   ggtitle("Main Markets For Each Firm's Main Product Line or Service") #to add a title to the plot
+```
+
+
+```{r}
+#(c)Legal structure of firms:
+
+      firms3 <- firms_sample2
+  
+
+#Re-code B1's column to show the names of the levels called type_of_firm
+
+   firms3$type_of_firm <- factor(firms3$B1, levels = 1:5, labels = c("Publicly traded", "Privately traded","Sole proprietorship", "Partnership (inc. LLCs)", "Limited partnership")) 
+
+      
+#To remove NAs from the type_of_firm column
+   
+   firms3 <- firms3[!is.na(firms3$type_of_firm), ] 
+   
+   
+#Create a bar graph to present the data
+   
+    ggplot(firms3, aes(x = type_of_firm)) +
+      geom_histogram(stat = "count", fill = "black", color = "white") +
+      #to change the theme of the plot
+        theme_minimal() +
+          labs(
+            title = "Type of Firms in the Region",
+            x = "Legal Structure",
+            y = "Frequency"
+             ) +
+       #to prevent the overlapping of variables 
+             guides(x = guide_axis(n.dodge = 2)) + 
+       #this flips the axes to make the graph horizontal
+                coord_flip() + 
+                  ggeasy::easy_center_title()
+```
+
+
+```{r}
+#(d)Age of Establishment:
+
+    firms4 <- firms_sample2 %>%
+  
+  
+#Add a column to the dataset called age_of_firm 
+  
+    mutate(age_of_firm = 2020 - B4A)
+
+      
+#Create a graph to present the data
+  
+  ggplot(firms4, aes(x = age_of_firm)) +
+     geom_freqpoly(binwidth = 5) + #use a bandwidth of 5 to get a smoother estimate
+        labs(
+          title = "Age Distribution of Establishments in the Caribbean",
+          x = "Age of the establishment",
+          y = "Frequency"
+            ) +
+             theme_minimal() +
+               ggeasy::easy_center_title()
+```
+
+
+```{r}
+#(e)Firm Sizes throughout the region:
+
+     firms5 <- firms_sample2
+
+
+#Re-code the H2A1A column of the data frame to represent firm size 
+
+      firms5$size <- ifelse(firms5$H2A1A <= 20, "small",
+                   ifelse(firms5$H2A1A >= 21 & firms5$H2A1A <= 99, "medium",
+                          ifelse(firms5$H2A1A >= 100, "large", firms5$H2A1A)))
+
+            
+#Create a histogram representing the data 
+      
+      ggplot(firms5, aes(x = size)) +
+        geom_bar(position = "dodge") +
+          labs(
+             title = "Firm Size in the Region", 
+             x = "Firm Size",
+             y = "Count"
+               ) + 
+              ggeasy::easy_center_title()
+```
+
+
+```{r}
+#(f)Industry:
+
+      firms6 <- firms_sample2
+
+#Assuming sampling_stratum is a factor with levels 1 and 2, re-code the column
+      
+firms6$sector <- factor(firms6$SAMPLING_STRATUM, levels = c(1, 2), labels = c("Manufacturing", "Services"))
+
+
+#Create a graph to represnt the variable
+
+      ggplot(firms6, aes(x = sector)) +
+       geom_bar() +
+        geom_text(stat = 'count', aes(label = ..count..), vjust = -0.1) +
+         labs(
+            title = "Industry Sector Breakdown",
+            x = "Industry/Sector", 
+            y = "Count"
+              ) + 
+             ggeasy::easy_center_title() +
+                facet_wrap(~COUNTRY) #to divide a plot into subplots based on country
+```
+
+
+Description of Key Variables
+```{r}
+#(a)Goal 1:
+     
+    firms6a <- firms6 %>%
+  
+  
+#Filter out all -99 and -44 from the i8a3, cov_b2a_x, and cov_b2a columns
+  
+    filter(I8A3 >= 0) %>%
+     filter(COV_B2A_X >= 0) %>%
+      filter(COV_B2A >= 0)
+
+
+#Convert the COV_B2A_X column's values into an integer to make it easier to calculate the impact of sales on covid figure
+  
+    firms6a$COV_B2A_X <- as.numeric(firms6a$COV_B2A_X) 
+     
+     
+#Re-code the  Calculate the covid sales figure
+
+      firms6a$covid_sales <- ifelse(firms6a$COV_B2A_X == 1, firms6a$I8A3 * (firms6a$COV_B2A/100), 
+                              ifelse(firms6a$COV_B2A_X == 2, firms6a$I8A3 * (- firms6a$COV_B2A/100), 
+                                firms6a$I8A3))
+
+#Create a graph representing the distribution of total sales before and after covid-19   
+       ggplot(firms6a) +
+         geom_qq(aes(sample = log(covid_sales)), colour = "tan4") +
+          geom_qq(aes(sample = log(I8A3)), colour = "gold") +
+            labs(
+              title = "Distribution of Total Sales Before and After COVID-19",
+              x = " ",
+              y = "Count"
+                ) +
+               ggeasy::easy_center_title() +
+                  facet_wrap(~sector)
+      
+     
+```
+
+
+```{r}
+#(b)Goal 2:
+
+      firms5a <- firms5 %>%
+  
+  
+#Filter out all -99, -44 and all other special interviewer codes from the i8a3, cov_b2a_x, and cov_b2a columns
+      
+      filter(E1B1 >= 0) %>%
+       filter(COV_B1A_X >= 0) %>%
+
+    
+#Factor the COV_B1A_X column into 2 levels
+      
+      mutate(covid_impact = factor(COV_B1A_X, levels = 1:2, labels = c("Increase", "Decrease"))) %>%
+        drop_na() #to remove all NA values from the data frame
+      
+      
+#Create a graph showcasing the relationship between capacity levels 
+       
+      ggplot(firms5a, aes(x = size, fill = covid_impact)) +
+        geom_bar(position = "dodge") + #to arrange elements side by side 
+          labs(
+              title = "The Impact of COVID-19 on Capacity Levels",
+              subtitle = "Relative to the Prevous Year", 
+              x = "Size of Firm", 
+              y = "Frequency"
+               ) + +
+        geom_text(stat = 'count', aes(label = ..count..), vjust = -0.1)
+```
+
+
+```{r}
+#(c)Goal 3
+      
+    firms1a <- firms1 %>% 
+  
+  
+#Filter out all special interviewer codes (i.e. -44, -99, etc) from the columns will be used 
+  
+    filter(COV_A5A > 0, COV_F2B > 0, COV_G1D1 > 0)
+
+
+#Re-code the cov_f2b into rename the levels 
+
+     firms1a$financing <- factor(firms1a$COV_F2B, levels = c(1, 2), labels = c("Yes", "No"))
+     
+  
+#Create a graph representing monetary government
+     
+     ggplot(firms1a, aes(x = log(COV_G1D1))) +
+       geom_dotplot() +
+         labs(
+            title = "Government Support Based On The Gender of The Owner of The Firm", 
+            x = "Financial Government Support"
+             ) +
+              facet_wrap(~gender) #to create subplots based on gender
+     
+     
+#Create a graph representing the variable, access to finance 
+     
+ggplot(firms1a, aes(x = financing)) +
+geom_bar() +
+labs(title = "Implementation Measures to Safeguard The Sources of Finance",
+      x = "Access to Finance") +
+             coord_flip() +
+               facet_wrap(~gender) 
+```
+
+
+```{r}
+#(d) Goal 4    
+       
+      firms3a <- firms3
+
+
+#Factor the COV_B1A_X column into 3 levels
+      
+      firms3a$covid_employment <- factor(firms3a$COV_D1A1A_X, levels = c(1, 2, 3), labels = c("Increase", "Decrease", "No Change"))
+
+      
+#Filter out the NAs from the covid_employment column
+     
+      firms3a <- firms3a %>%
+        filter(covid_employment == covid_employment, na.rm = TRUE) 
+  
+      
+#Create a graph to show the relationship between the change and the type of firm
+       
+      ggplot(firms3a, aes(x = type_of_firm, y = covid_employment)) +
+        geom_jitter(shape = 8) +
+          labs(
+            title = "The Impact of the COVID-19 Crisis on The Full-Time Employment of Firms", 
+              x = "Type of Firm", 
+               y = "Impact of COVID-19 on Full-time Employment Levels"
+                ) +
+                guides(x = guide_axis(n.dodge = 2)) #avoids overlapping labels on the x-axis
+```
+
+
+```{r}
+#(e)Goal 5:    
+
+    firms6b <- firms6 %>%
+  
+  
+#Filter out all the special interviwer codes (i.e. -77. -88. etc) and select the columns to be worked with
+    filter(C15A > 0, COV_A7A > 0) %>%
+         select(sector, C15A, COV_A7A)
+
+
+#create graph to show the main challenges firms face before and during the pandemic
+    ggplot(firms6a, aes(x = sector, y = factor(COV_A7A))) +
+      geom_jitter() + 
+         geom_jitter(aes(y = C15A), color = "lightblue") +
+            labs(
+              title = "Main Challenges Faced By Firms Before and Since the Advent of COVID-19"
+                )
+      
+      
+
+```
+
+
+
+References
+```{r}
+
+#Deepanshu , Bhalla. "IF ELSE CONDITIONS IN R (WITH EXAMPLES)", 2018. https://www.listendata.com/2017/03/if-else-in-r.html.
+
+#"Recoding multiple values in a column using an "ifelse" statement" Stack Overflow, Feburary 14, 2019. https://stackoverflow.com/questions/54700667/recoding-multiple-values-in-a-column-using-an-ifelse-statement
+
+#Thomas , Neitmann. “Center Plot Title in GGPLOT2.” Stack Overflow, April 12, 2020. https://stackoverflow.com/questions/40675778/center-plot-title-in-ggplot2. 
+
+```
+

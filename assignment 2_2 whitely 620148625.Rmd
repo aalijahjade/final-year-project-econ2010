@@ -1,0 +1,400 @@
+---
+title: "R Notebook"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+```{r}
+#load libraries
+
+  library(haven)
+  library(dplyr)
+  library(tidyr)
+  library(tidyverse)
+  library(rempsyc)
+  library(tinytex)
+  library(kableExtra)
+  library(gtsummary)
+  library(ggpubr)
+  library(rstatix)
+  library(ggstatsplot)
+  library(PMCMRplus)
+  library(nortest)
+  library(Hmisc)
+  library(sjPlot)
+  library(sjmisc)
+  library(sjlabelled)
+  library(texreg)
+  library(psych)
+  library(corrplot)
+  library(see)
+  library(performance)
+  library(huxtable)
+
+```
+
+
+```{r}
+#Import data set 
+
+  firms <- read_sav("C:/Users/white/Downloads/IFPG_COVID19_Final_Data_2020.sav")
+    View(firms) 
+    
+```
+
+
+```{r}
+#Set seed for reproducibility
+
+  set.seed(763)
+
+
+#Create a 90% sample of the dataset 
+
+  sample_indices <- sample(nrow(firms), size = 0.9 * nrow(firms))
+    firms_sample <- firms[sample_indices, ]
+```
+
+
+GOAL 1
+```{r}
+#Assuming sampling_stratum is a factor with levels 1 and 2, re-code the column
+  
+  firms1 <- firms_sample
+   firms1$industry <- factor(firms1$SAMPLING_STRATUM, levels = c(1, 2), labels = c("Manufacturing", "Services"))
+   
+#Re-code the data frame in order to Calculate the covid sales figure and filter all -99 and -44 from the cov_b2a_x, and cov_b2a columns
+   
+    firms1 <- firms1 %>%
+       filter(COV_B2A_X >= 0) %>%
+        filter(COV_B2A >= 0)  %>%
+         select(industry, COV_B2A, COV_B2A_X)
+      
+#Convert the COV_B2A_X column's values into an integer to make it easier to calculate the impact of COVID-19 on sales
+  
+          firms1$COV_B2A_X <- as.numeric(firms1$COV_B2A_X) 
+            firms1$covid_sales <- ifelse(firms1$COV_B2A_X == 1, firms1$COV_B2A, 
+                          ifelse(firms1$COV_B2A_X == 2, (- firms1$COV_B2A), 
+                                NA)) #Re-code the data and add a new column called "covid_sales"
+            
+    
+#Select the columns that will be used to conduct the test 
+             firms1 <- firms1 %>%
+              select(industry, covid_sales)
+              
+
+#Assuming all the assumptions are correct, conduct a One-way ANOVA
+
+#Check Normality
+#Normality of Residuals
+#-------------------------------------------------
+#Run the Linear Model
+             
+  aov.model.test <- lm(covid_sales ~ industry, data = firms1)
+    summary(aov.model.test)
+             
+#Check the QQ Plot
+    
+  ggqqplot(residuals(aov.model.test))
+
+#Run the Normality Test
+  
+  shapiro_test(residuals(aov.model.test)) # if n <= 5000
+
+#Normality by Groups
+#-----------------------------------------------
+#Check the QQ Plot
+  
+  ggqqplot(firms1, "covid_sales" , facet.by = "industry")
+
+#Check for Equal Variance
+#--- ------ ----- ------ ----- ------ ----- ------ ----- ----- ------
+#Plot the data
+  
+  plot(aov.model.test, 1)  # Want a almost flat horizontal red line
+
+#Run the formal Levene ’s Test
+  
+  firms1 %>% 
+   levene_test(covid_sales ~ industry) #If significant , run the welch_anova_test() Or the Kruskal - Wallis Test
+
+#Run the test
+  
+  res.aov <- aov(covid_sales ~ industry, data = firms1)
+    summary(res.aov)
+
+#Calculate r^2
+    
+  RSq <- var(predict(res.aov)) / var(firms1$covid_sales, na.rm = TRUE)
+    round(RSq, 2)
+
+#If significant , run post hoc (multiple comparisons) test
+    
+  pairwise.t.test(firms1$covid_sales, firms1$industry, p.adjust.method = "bonferroni")
+
+#Plot of One-Way ANOVA results 
+  
+  #for a parametric test 
+  ggbetweenstats (
+    data = firms1,
+    x = industry,
+    y = covid_sales,
+    type = "parametric", # parametric ANOVA test when assuming there are no outliers 
+    var.equal = TRUE , # ANOVA or Welch ANOVA
+    plot.type = "box",
+    pairwise.comparisons = TRUE,
+    p.adjust.method = "bonferroni",
+    pairwise.display = "significant",
+    centrality.plotting = FALSE,
+    bf.message = FALSE
+     )
+  
+  #for a non-parametric test 
+  ggbetweenstats(
+    data = firms1,
+    x = industry,
+    y = covid_sales,
+    type = "non-parametric", # Kruskal - Wallis: non-parametric test when assuming there are outliers  
+    var.equal = FALSE , # ANOVA or Welch ANOVA
+    plot.type = "box",
+    pairwise.comparisons = TRUE,
+    p.adjust.method = "bonferroni",
+    pairwise.display = "significant",
+    centrality.plotting = FALSE,
+    bf.message = FALSE
+      )
+
+```
+
+
+GOAL 2
+```{r}
+
+#Select all the columns that will be included in the test and remove all the special interviewer codes ex. -44
+  
+   firms2 <- firms_sample %>%
+      select(E1B1, COV_B1A, COV_B1A_X) %>%
+        filter(E1B1 > 0) %>%
+          filter(COV_B1A_X > 0) %>%
+            filter(COV_B1A > 0)  
+
+
+#Convert the COV_B2A_X column's values into an integer to make it easier to calculate the impact of the pandemic on capacity utilization
+  
+     firms2$COV_B1A_X <- as.numeric(firms2$COV_B1A_X) 
+      firms2$cov_b1a <- ifelse(firms2$COV_B1A_X == 1, firms2$COV_B1A, 
+                              ifelse(firms2$COV_B1A_X == 2, - (firms2$COV_B1A), 
+                                NA)) #Recode the data and create a new column called "post"
+
+# Select and rename the columns to be used
+      
+firms2 <- firms2 %>%
+  select(E1B1, cov_b1a) %>%
+  rename(pre = E1B1, post = cov_b1a)
+
+# Creating an observation id
+
+firms2$observation_id <- seq.int(nrow(firms2))
+
+# Subsetting observation id and pre and calling it pre
+
+pre <- firms2[, c("observation_id", "pre")]
+
+# Changing the name of pre to percentage and adding a column called time
+
+colnames(pre)[2] <- "percent"
+pre$time <- "pre"
+
+# Doing the same for post
+
+post <- firms2[, c("observation_id", "post")]
+colnames(post)[2] <- "percent"
+post$time <- "post"
+
+# Merge both data frames
+
+df <- rbind(pre, post)
+
+      
+# Paired Sample T-test 
+# -------------------------------------------
+
+df %>%
+  filter(complete.cases(.)) %>%
+  group_by(observation_id) %>%
+  filter(n() == 2) %>%
+  ungroup() %>%
+  tbl_summary(by = time, include = -observation_id,
+              statistic = list(all_continuous() ~ "{mean} ({sd})")
+              ) %>%
+  add_p(test = list(
+    percent   ~ "paired.t.test"),
+    group    = observation_id)
+
+#To calculate cohen's d
+     #an error occured when using the nice_t_table()
+df$pairs <- 1:nrow(df)  # Create a column to specify pairs
+nice_t_test(data = df,
+            response = "percent",
+            formula = percent ~ time + pairs,  # Specify the formula for paired data
+            paired = FALSE) |>  # Set paired = FALSE
+  nice_table()
+
+
+
+
+```
+
+
+GOAL 3
+```{r}
+firms3 <- firms_sample %>%
+   select(B6E, B5A, H2A1A, B1, SAMPLING_STRATUM, COV_A5A, B4A) %>%
+    filter(COV_A5A > 0, B4A > 0, H2A1A > 0) %>%
+     mutate(firm_age = 2020 - B4A) #Add a column to the dataset called age_of_firm 
+
+#Re-coding B5A as Male-owned and Female-owned and dropping all the 3s
+
+    firms3$gender <- ifelse(firms3$B5A %in% c(1, 2), "Male-owned", ifelse(firms3$B5A %in% c(4, 5), "Female-owned", NA))
+      firms3 <- firms3[!is.na(firms3$gender), ] #to remove NAs from the gender column
+
+#Assuming sampling_stratum is a factor with levels 1 and 2, re-code the column
+  
+   firms3$industry <- factor(firms3$SAMPLING_STRATUM, levels = c(1, 2), labels = c("Manufacturing", "Services"))
+   
+#Re-code B1's column to show the names of the levels called firm_type
+
+   firms3$firm_type <- ifelse(firms3$B1 %in% c(1, 2), "Shareholding firms",
+                       ifelse(firms3$B1 %in% c(4, 5), "Partnerships", "Sole proprietorship"))
+
+   #To remove NAs from the type_of_firm column
+   
+   firms3 <- firms3[!is.na(firms3$firm_type), ]   
+  
+     firms3 <- firms3 %>%
+      select(B6E, gender, firm_type, industry, COV_A5A, firm_age, H2A1A)
+
+#Create a function to do a chi-squared test 
+     
+  calculate_chi_square <- function(data, var1, var2) {
+    chi_square_result <- chisq.test(data[[var1]], data[[var2]])
+    cor_value <- sqrt(chi_square_result$statistic / sum(chi_square_result$observed))
+    p_value <- chi_square_result$p.value
+    
+    return(c(cor = cor_value, statistic = chi_square_result$statistic, p = p_value))
+  }
+
+# Calculate correlation coefficients for specified variable pairs
+  
+cor_results <- list(
+  #run a correlation test between all the numerical variables
+  cor_experience_resilience = cor.test(firms3$COV_A5A, firms3$B6E, method = "pearson"),
+  cor_reslilience_age = cor.test(firms3$COV_A5A, firms3$firm_age, method = "pearson"),
+  cor_resilience_employees = cor.test(firms3$COV_A5A, firms3$H2A1A, method = "pearson"),
+  cor_age_experience = cor.test(firms3$firm_age, firms3$B6E, method = "pearson"),
+  cor_age_employees = cor.test(firms3$firm_age, firms3$H2A1A, method = "pearson"),
+  cor_experience_employees = cor.test(firms3$B6E, firms3$H2A1A, method = "pearson"),
+  
+  #run a chi-squared test on all the numerical variables
+  #Gender and all other variables
+  cor_gender_resilience = calculate_chi_square(firms3, "gender", "COV_A5A"),
+  cor_gender_experience = calculate_chi_square(firms3, "gender", "B6E"),
+  cor_gender_age = calculate_chi_square(firms3, "gender", "firm_age"),
+  cor_gender_employees = calculate_chi_square(firms3, "gender",  "H2A1A"),
+  cor_gender_type = calculate_chi_square(firms3, "gender", "firm_type"),
+  cor_gender_experience = calculate_chi_square(firms3, "gender", "industry"),
+  #Firm type and all other variables
+  cor_type_resilience = calculate_chi_square(firms3, "firm_type", "COV_A5A"), 
+  cor_type_experience = calculate_chi_square(firms3, "firm_type", "B6E"), 
+  cor_type_age = calculate_chi_square(firms3, "firm_type", "firm_age"), 
+  cor_type_employees = calculate_chi_square(firms3, "firm_type", "H2A1A"),
+  cor_type_industry = calculate_chi_square(firms3, "firm_type", "industry"),
+  
+  #Industry and all other variables
+  cor_industry_resilience = calculate_chi_square(firms3, "industry", "COV_A5A"),
+  cor_industry_experience = calculate_chi_square(firms3, "industry", "B6E"),
+  cor_industry_age = calculate_chi_square(firms3, "industry", "firm_age"),
+  cor_industry_employees = calculate_chi_square(firms3, "industry", "H2A1A")
+    )
+
+  print(cor_results)
+
+
+
+#Regression Analysis 
+# -------------------------------------------------
+#create dummy variables
+
+  male <- ifelse(firms3$gender == 'Male-owned', 1, 0)
+  female <- ifelse(firms3$gender == 'Female-owned', 1, 0)
+  manufacturing <- ifelse(firms3$industry == 'Manufacturing', 1, 0)
+  services <- ifelse(firms3$industry == 'Service', 1, 0)
+  shareholding_firms <- ifelse(firms3$firm_type == 'Shareholding firms', 1, 0)
+  sole_proprietorship <- ifelse(firms3$firm_type == 'Sole proprietorship', 1, 0)
+
+
+#create data frame to use for regression
+
+  df_reg <- data.frame(resilience = firms3$COV_A5A,
+                       yrs_exp = firms3$B6E,
+                       firm_age = firms3$firm_age,
+                       male = male,
+                       female = female, 
+                       manufacturing = manufacturing,
+                       services = services, 
+                       shareholding_firms = shareholding_firms, 
+                       sole_proprietorship = sole_proprietorship,
+                       employees = firms3$H2A1A)
+
+#view data frame
+
+  view(df_reg)
+
+# -------------------------------------------------
+# Run the Linear Model
+
+  res_mod1 <- lm(resilience ~ yrs_exp + firm_age + male + female + manufacturing + services + shareholding_firms + sole_proprietorship + employees, data = df_reg)
+
+  res_mod2 <-  lm(resilience ~ yrs_exp + male + female + manufacturing + services + shareholding_firms + sole_proprietorship, data = df_reg)
+  
+  tab_model(res_mod1, res_mod2)
+```
+
+
+GOAL 4
+```{r}
+  firms4 <- firms_sample %>%
+# Rename columns c15a to pre and cov_a7a to post
+    rename(pre = C15A, post = COV_A7A) 
+firms4$firm_type <- ifelse(firms4$B1 %in% c(1, 2), "Shareholding firms",
+                       ifelse(firms4$B1 %in% c(4, 5), "Partnerships", "Sole proprietorship"))
+     #To remove NAs from the firm_type column
+   firms4 <- firms4[!is.na(firms4$firm_type), ] 
+   
+   firms4 <- firms4 %>%
+     select(firm_type, pre, post)
+     
+
+# Recode the pre and post columns
+firms4 <- firms4 %>%
+  mutate(pre_post_recode = ifelse(pre == post, 1, 2))
+
+#Bar grpah representing the data
+plot_xtab (
+x = firms4$firm_type ,
+grp = firms4$pre_post_recode ,
+margin = "row",
+bar.pos = "stack",
+show.summary = TRUE , 
+coord.flip = TRUE )
+
+#Chi-squared analyis 
+tab_xtab(var.row = firms4$firm_type ,
+var.col = firms4$pre_post_recode ,
+title = "Chi Squared Analysis",
+var.labels = c("Firm Type" , "Similarities vs Differences"), #used to change variable names
+show.row.prc = TRUE) #shows Column Percentages
+
+
+```
